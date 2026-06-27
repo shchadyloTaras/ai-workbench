@@ -1,0 +1,16 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+*.swp
+
+# Node (in case a skill grows a checker with deps)
+node_modules/
+npm-debug.log*
+
+# Local scratch
+*.local
+.env
