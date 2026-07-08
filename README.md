@@ -50,7 +50,8 @@ ai-workbench/
 │   ├── verify-gate/           ← run the full quality gate, stop on first failure
 │   ├── guarded-commit/        ← commit on a strict convention; refuse on red / missing log
 │   ├── progress-log/          ← keep an append-only progress log + checklist + status
-│   └── clean-context-review/  ← independent read-only review of a diff (maker ≠ checker)
+│   ├── clean-context-review/  ← independent read-only review of a diff (maker ≠ checker)
+│   └── lead-list-builder/     ← raw lead export → clean SaaS target list (dedup, classify, enrich)
 ├── projects/                  ← project-specific rules + examples the skills plug into
 │   └── gitwarden/             ← the worked example these skills were generalized from
 └── templates/
@@ -66,6 +67,7 @@ ai-workbench/
 | [`guarded-commit`](skills/guarded-commit/README.md)             | Commit with an exact subject convention; refuse on red tests or a missing log. |
 | [`progress-log`](skills/progress-log/README.md)                 | Append a progress entry, tick the checklist, re-derive the status roll-up.     |
 | [`clean-context-review`](skills/clean-context-review/README.md) | Dispatch a read-only reviewer against a named rule-set; report `file:line` findings. |
+| [`lead-list-builder`](skills/lead-list-builder/README.md)       | Turn a raw lead/company export into a clean SaaS + decision-maker target list, cheaply, with one enrichment pause. |
 
 `track-runner` is the orchestrator — it calls the other four (plus `clean-context-review`) once
 per phase. Each of the four also stands alone.
