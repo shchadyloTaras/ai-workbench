@@ -50,6 +50,11 @@ Marketing leaders (CMO / Head of Growth) are kept when they land in t1/t2 by sen
 ## 3. Toggles (the operator's two-decision surface)
 
 - **B2B-only** — default **on**. B2C products flagged and dropped. Turn off to keep B2C.
+- **Giant-company ceiling** — default **on**: companies over **~1,000 employees** are dropped
+  (reason `giant`) even if genuinely SaaS — outreach from a small vendor won't land at a
+  Mastercard-class enterprise. Size is mostly missing from raw exports, so enforce it twice:
+  strip *famous* giants by name before the enrichment hand-off (don't pay for domains you'll
+  discard), and flag obvious global-enterprise sites at classification time.
 - **Small-company threshold** — default **≤ 200 employees**. `ic_conditional` specialists are kept
   only for companies at/under this size. Company size is usually unknown at classification time, so
   specialists always land in a separate `2_ic_conditional_leads.csv` for a size check rather than

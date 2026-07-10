@@ -17,6 +17,8 @@ then:
        - clear_saas          -> keep for free (industry alone is decisive)
        - clear_drop          -> drop for free
        - have_website        -> classify now, no enrichment needed
+                                (includes companies whose NAME embeds the domain,
+                                 e.g. "Checkout.com", "boost.ai" — no credits wasted)
        - need_enrichment     -> go to the enrichment tool (Clay) to find a domain
      and writes a ready-to-upload enrichment-input file.
 
@@ -160,6 +162,18 @@ def company_key(name: str) -> str:
     s = re.sub(r"\s+", " ", s).lower()
     s = LEGAL_SUFFIX.sub("", s).strip(" ,.")
     return s
+
+
+NAME_DOMAIN_RX = re.compile(
+    r"\b([a-z0-9][a-z0-9-]{1,62}\.(?:com|io|ai|co|net|org|app|dev|tech|cloud|digital|"
+    r"agency|studio|us|uk|de|fr|ca|in|me|ly|gg|so|xyz))\b", re.I)
+
+
+def domain_from_name(name: str) -> str:
+    """A name like 'Checkout.com' or 'boost.ai' already carries the domain —
+    treat it as the website so the company never reaches paid enrichment."""
+    m = NAME_DOMAIN_RX.search(name or "")
+    return m.group(1).lower() if m else ""
 
 
 # ===========================================================================
@@ -313,14 +327,15 @@ def main():
         b = industry_bucket(top_ind)
         bucket_counts[b] += 1
         rank, _, li, name, title, country = c["best"]
+        display_name = c["display"].most_common(1)[0][0]
         comp_rows.append({
             "company_key": key,
-            "company_name": c["display"].most_common(1)[0][0],
+            "company_name": display_name,
             "industry": top_ind,
             "industry_bucket": b,
             "n_leads": c["n_leads"],
             "n_icp_leads": c["n_inplay"],
-            "existing_website": c["website"],
+            "existing_website": c["website"] or domain_from_name(display_name),
             "has_description": "yes" if c["description"] else "",
             "best_lead_name": name,
             "best_lead_title": title,

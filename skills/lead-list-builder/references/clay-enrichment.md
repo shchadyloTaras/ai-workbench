@@ -6,6 +6,11 @@ sizing) the skill does for free. Enrichment is touched **once**, on de-duplicate
 
 The skill prints this block at the pause, filled in with the real count and estimate.
 
+`enrichment_input.csv` is already thinned before it gets here: name-embedded domains
+("Checkout.com", "boost.ai") were extracted at stage 1, and famous giants (>~1,000 employees) were
+stripped to `companies_giants_dropped.csv`. If you still spot a household-name enterprise in the
+file, delete the row instead of enriching it.
+
 ## The money rule (state it every time)
 
 **Domain lookup only. Do NOT enable AI columns, email finding, or full "company enrichment".**
@@ -24,7 +29,9 @@ Those multiply credit burn 2–5×. One credit ≈ one company for a plain domai
    pulls description from the site itself and only sources size later, pointwise, where it changes a
    decision.
 5. Export the table as CSV **with all original columns plus** the resolved domain (and
-   `domain_source` if Clay provides it). Keep `company_key` untouched — it is the join key back.
+   `domain_source` if Clay provides it). Clay usually lands the domain in its own column named
+   `Domain` — leave it as is, don't rename anything; the skill finds it by content on resume.
+   Keep `company_key` untouched — it is the join key back.
 6. Save that file next to the input as **`clay_output.csv`** and re-run the skill. It resumes
    automatically.
 

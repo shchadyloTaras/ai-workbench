@@ -30,9 +30,10 @@ skill; the default ruleset is "B2B SaaS product companies + decision-maker title
    `Website` (filled in 4% of rows), country = `Location`. Correct?"* If the **company** column
    can't be found, STOP and say so — the skill can't run without it.
 3. **Confirm the ICP toggles in one screen, with defaults** (from `references/icp-ruleset.md`):
-   *"I'll keep SaaS companies, **B2B only** (B2C dropped), titles = decision-makers + seniors
-   (rank-and-file specialists only at small companies ≤200). Strict mode: anything still uncertain
-   is left out. Press enter to accept, or tell me what to change."* Record the answers.
+   *"I'll keep SaaS companies, **B2B only** (B2C dropped), **giants over ~1,000 employees
+   dropped**, titles = decision-makers + seniors (rank-and-file specialists only at small
+   companies ≤200). Strict mode: anything still uncertain is left out. Press enter to accept, or
+   tell me what to change."* Record the answers.
 
 ### Stage 1 — Free filter (no cost)
 
@@ -56,16 +57,28 @@ skill; the default ruleset is "B2B SaaS product companies + decision-maker title
 
 ### Enrichment pause (the one human step) — STOP and hand off
 
-8. If `enrichment_input.csv` is non-empty and no `clay_output.csv` exists yet, **STOP** and print
-   the exact Clay instructions from [`references/clay-enrichment.md`](references/clay-enrichment.md),
-   including the estimated size and cost, and the money rule: **domain lookup only — no AI / email /
-   company-enrichment columns.** Tell the operator to drop the result back as `clay_output.csv` and
-   re-run the skill. Do not proceed past this point in the same run.
+8. Before the hand-off, thin `enrichment_input.csv`: scan the company names for **famous giants**
+   (household-name enterprises over ~1,000 employees — banks, card networks, telcos, global brands;
+   e.g. Mastercard) and move them to `companies_giants_dropped.csv` with reason `giant` — never pay
+   to enrich a company the size ceiling will discard. (Name-embedded domains like "Checkout.com"
+   are already extracted by the stage-1 script and never reach this file.)
+   Then, if `enrichment_input.csv` is non-empty and no `clay_output.csv` exists yet, **STOP** and
+   print the exact Clay instructions from
+   [`references/clay-enrichment.md`](references/clay-enrichment.md), including the estimated size
+   and cost, and the money rule: **domain lookup only — no AI / email / company-enrichment
+   columns.** Tell the operator to drop the result back as `clay_output.csv` and re-run the skill.
+   Do not proceed past this point in the same run.
 
 ### Resume — after Clay (detected automatically)
 
-9. On re-invocation, if `clay_output.csv` is present, continue from here. Detect its resolved-domain
-   column, then run Stage 2's three tiers on the enriched companies exactly as above.
+9. On re-invocation, if `clay_output.csv` is present, continue from here. Find the resolved-domain
+   column **by content, not by assuming a name**: Clay usually writes it to its own column (often
+   literally `Domain`; sometimes `Website`, `Company Domain`, or a waterfall-named column) — pick
+   the column whose values parse as bare domains/URLs and report the pick and fill rate to the
+   operator (*"domains = `Domain`, filled 91%"*). If no column qualifies, **ask the operator which
+   column holds the domains** — with a `clay_output.csv` present, "the file has no websites" is
+   never a valid conclusion and never a reason to start a classification run. Then run Stage 2's
+   three tiers on the enriched companies exactly as above.
 
 ### Stage 3 — Finalize (deterministic)
 
@@ -86,6 +99,12 @@ skill; the default ruleset is "B2B SaaS product companies + decision-maker title
   burn on duplicates. One credit ≈ one company.
 - **Clay = domain lookup only.** Never enable AI columns, email finding, or full company enrichment.
   State this in the pause message every time.
+- **Never classify without a confirmed domain column.** A Clay export always has the domains
+  somewhere — find the column by content or ask the operator; announcing "no websites" burns a run
+  for nothing.
+- **Don't pay to enrich what the ICP will drop.** Famous giants (>~1,000 employees) are stripped
+  before the Clay hand-off; name-embedded domains (Checkout.com) never go to Clay — stage 1
+  extracts them.
 - **A lone tier-1 heuristic verdict is never final** — always do the tier-2 read of the captured
   text before shipping a company as SaaS. (This is the guardrail against false "SaaS" like a battery
   company that merely has a login page.)
