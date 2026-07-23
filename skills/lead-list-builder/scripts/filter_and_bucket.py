@@ -7,6 +7,9 @@ then:
   1. Classifies every lead's job title into a tier
      (keep_t1 / keep_t2 / ic_conditional / drop / review) using the ICP
      title rules in references/icp-ruleset.md.
+     Leads located in India / Africa are hard-dropped first (word-boundary
+     match on the country field; tag `drop / geo_excluded(India/Africa)` in
+     the spine) — default ON, disable with --no-geo-filter.
   2. Sets aside leads with no / placeholder company name (Stealth, Self-employed,
      Freelance, …) into a separate "manual" file — never auto-processed.
   3. Dedups leads to UNIQUE COMPANIES; a company is "in-play" if it has at
@@ -36,6 +39,7 @@ Usage:
       [--col-description Description] [--col-id id] \
       [--col-name "Full Name" | --col-firstname First --col-lastname Last] \
       [--enrich-cap N]   # cap the enrichment batch to N companies (0 = all that need it)
+      [--no-geo-filter]  # keep India/Africa-located leads (default: hard-excluded)
 
 Outputs (UTF-8-BOM so Excel opens them cleanly) -> --outdir:
   leads_master_tagged.csv            one row per lead, with its tier tag (join spine)
@@ -56,6 +60,31 @@ import sys
 from collections import Counter, defaultdict
 
 RANDOM_SEED = 42
+
+# ===========================================================================
+# Geo exclusion — default ON (operator rule from the source engagement,
+# 2026-07-22: India/Africa-located leads never convert for this ICP).
+# Word-boundary match on the free-text country/location field, so
+# "Indiana"/"Indianapolis" do NOT match "India". --no-geo-filter disables.
+# ===========================================================================
+
+AFRICA_COUNTRIES = [
+    "nigeria", "south africa", "kenya", "egypt", "ghana", "morocco", "tunisia", "algeria",
+    "ethiopia", "uganda", "tanzania", "rwanda", "senegal", "ivory coast", "côte d'ivoire",
+    "cameroon", "zambia", "zimbabwe", "botswana", "namibia", "mauritius", "angola",
+    "mozambique", "sudan", "libya", "cape verde", "gambia", "benin", "togo", "mali",
+    "niger", "chad", "somalia", "liberia", "sierra leone", "malawi", "madagascar",
+    "burundi", "eritrea", "djibouti", "gabon", "congo", "guinea", "mauritania",
+    "lesotho", "eswatini", "swaziland", "burkina faso",
+]
+GEO_AFRICA_RX = re.compile(r"\b(" + "|".join(re.escape(c) for c in AFRICA_COUNTRIES) + r")\b", re.I)
+GEO_INDIA_RX = re.compile(r"\bindia\b", re.I)
+
+
+def is_geo_excluded(location):
+    loc = (location or "").strip()
+    return bool(loc) and bool(GEO_INDIA_RX.search(loc) or GEO_AFRICA_RX.search(loc))
+
 
 # ===========================================================================
 # ICP title classification — PROJECT-AGNOSTIC CORE (see references/icp-ruleset.md)
@@ -243,11 +272,13 @@ def main():
     ap.add_argument("--col-firstname", default="")
     ap.add_argument("--col-lastname", default="")
     ap.add_argument("--enrich-cap", type=int, default=0, help="max companies in the enrichment batch (0 = all that need it)")
+    ap.add_argument("--no-geo-filter", action="store_true", help="keep India/Africa-located leads (default: hard-excluded)")
     args = ap.parse_args()
 
     os.makedirs(args.outdir, exist_ok=True)
 
     leads_total = 0
+    geo_dropped = 0
     title_counts = Counter()
     review_titles = Counter()
     noname_rows = []
@@ -265,7 +296,11 @@ def main():
         for row in reader:
             leads_total += 1
             title = get(row, args.col_title)
+            country = get(row, args.col_country)
             bucket, reason = classify_title(title)
+            if not args.no_geo_filter and is_geo_excluded(country):
+                bucket, reason = "drop", "geo_excluded(India/Africa)"
+                geo_dropped += 1
             title_counts[bucket] += 1
             if bucket == "review":
                 review_titles[title] += 1
@@ -274,7 +309,6 @@ def main():
             key = company_key(raw_name)
             placeholder = is_placeholder(key)
             linkedin = get(row, args.col_linkedin)
-            country = get(row, args.col_country)
             if args.col_name:
                 full_name = get(row, args.col_name)
             else:
@@ -384,6 +418,8 @@ def main():
     print(f"LEADS: {leads_total:,}")
     for b in ("keep_t1", "keep_t2", "ic_conditional", "review", "drop"):
         print(f"  {b:15s} {title_counts[b]:>8,} ({pct(title_counts[b], leads_total)})")
+    print(f"  geo-excluded India/Africa (inside 'drop'): {geo_dropped:,}"
+          + ("  [--no-geo-filter was set]" if args.no_geo_filter else ""))
     print(f"  no/placeholder company -> manual: {len(noname_rows):,}")
     print(f"\nIN-PLAY COMPANIES: {inplay:,}")
     for b in ("clear_saas", "software_dev", "grey_ITfin", "clear_drop", "longtail", "blank"):

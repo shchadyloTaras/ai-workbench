@@ -61,7 +61,11 @@ Marketing leaders (CMO / Head of Growth) are kept when they land in t1/t2 by sen
   the ready list.
 - **Strictness** — default **strict**: a company still `uncertain` after all classification tiers is
   left OUT of the ready list. **Broad** puts uncertain companies' leads into a review file instead.
-- **Geography** — not filtered by default. Country is carried through for the operator to slice.
+- **Geography** — **India and Africa are hard-excluded by default** (operator rule from the source
+  engagement, 22.07.2026: these geos never convert for this ICP). Word-boundary match on the
+  free-text country field ("Indiana" ≠ "India"); excluded leads stay in the spine tagged
+  `drop / geo_excluded(India/Africa)` for audit. Disable with `--no-geo-filter` (stage-1 script)
+  when targeting a different market. All other geos are carried through for the operator to slice.
 
 ## 4. Industry buckets (free fast-path, before any site read)
 

@@ -31,9 +31,9 @@ skill; the default ruleset is "B2B SaaS product companies + decision-maker title
    can't be found, STOP and say so — the skill can't run without it.
 3. **Confirm the ICP toggles in one screen, with defaults** (from `references/icp-ruleset.md`):
    *"I'll keep SaaS companies, **B2B only** (B2C dropped), **giants over ~1,000 employees
-   dropped**, titles = decision-makers + seniors (rank-and-file specialists only at small
-   companies ≤200). Strict mode: anything still uncertain is left out. Press enter to accept, or
-   tell me what to change."* Record the answers.
+   dropped**, **India + Africa locations dropped**, titles = decision-makers + seniors
+   (rank-and-file specialists only at small companies ≤200). Strict mode: anything still uncertain
+   is left out. Press enter to accept, or tell me what to change."* Record the answers.
 
 ### Stage 1 — Free filter (no cost)
 
@@ -75,7 +75,10 @@ skill; the default ruleset is "B2B SaaS product companies + decision-maker title
    column **by content, not by assuming a name**: Clay usually writes it to its own column (often
    literally `Domain`; sometimes `Website`, `Company Domain`, or a waterfall-named column) — pick
    the column whose values parse as bare domains/URLs and report the pick and fill rate to the
-   operator (*"domains = `Domain`, filled 91%"*). If no column qualifies, **ask the operator which
+   operator (*"domains = `Domain`, filled 91%"*). Treat literal placeholders (`No Result Found`,
+   `-`, `n/a`) as EMPTY both when picking the column and when reporting the fill rate — Clay writes
+   "No Result Found" as text, and counting it as filled once inflated a real run's match rate to a
+   reported 98.8% when the true found-rate was 67.2%. If no column qualifies, **ask the operator which
    column holds the domains** — with a `clay_output.csv` present, "the file has no websites" is
    never a valid conclusion and never a reason to start a classification run. Then run Stage 2's
    three tiers on the enriched companies exactly as above.
@@ -95,8 +98,9 @@ skill; the default ruleset is "B2B SaaS product companies + decision-maker title
 - **Two decisions max** from the operator (column mapping, ICP toggles). Everything else has a
   default — never make them configure the rules.
 - **Never overwrite the input.** All work goes in the per-run folder.
-- **De-dup to companies before enrichment.** Never send raw leads to Clay — half the credits would
-  burn on duplicates. One credit ≈ one company.
+- **De-dup to companies before enrichment.** Never send raw leads to Clay — half the spend would
+  burn on duplicates. One action ≈ one company (with the free Clearbit domain column the expensive
+  credit meter stays untouched — see `references/clay-enrichment.md`).
 - **Clay = domain lookup only.** Never enable AI columns, email finding, or full company enrichment.
   State this in the pause message every time.
 - **Never classify without a confirmed domain column.** A Clay export always has the domains
